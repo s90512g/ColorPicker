@@ -5,8 +5,47 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorPicker"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800" Loaded="Window_Loaded">
     <Grid>
-        
+        <Grid.Resources>
+            <Style TargetType="FrameworkElement" x:Key="CommonStyle">
+                <Setter Property="HorizontalAlignment" Value="Left"/>
+                <Setter Property="VerticalAlignment" Value="Top" />
+            </Style>
+            <DataTemplate x:Key="ColorIndexTempalte">
+                <Border BorderBrush="Gray" BorderThickness="1">
+                    <Rectangle Fill="{Binding ColorValue}" Width="20" Height="20"/>
+                </Border>
+            </DataTemplate>
+            <Style TargetType="ListBoxItem">
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Margin" Value="10,10,0,0"/>
+            </Style>
+            <Style TargetType="ListBox" BasedOn="{StaticResource CommonStyle}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <ItemsPresenter  Style="{StaticResource CommonStyle}"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="ItemsPanel">
+                    <Setter.Value>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Grid.Resources>
+
+        <Image Margin="500,100,0,0" Width="160" Height="165" Source="Image/pop_ic_color.png" MouseDown="Image_MouseDown" x:Name="ColorImg" Style="{StaticResource CommonStyle}"/>
+        <Border Margin="500,100,0,0" Width="160" Height="165" BorderBrush="Black" BorderThickness="1"  Style="{StaticResource CommonStyle}"/>
+        <Path Margin="500,100,0,0" Width="160" Height="165" x:Name="DrawBox" Fill="{x:Null}" Stroke="Black" StrokeThickness="1"  Style="{StaticResource CommonStyle}"/>
+        <TextBlock Text="自訂色彩(C):" Margin="50,100,0,0" FontSize="24" Width="200" Style="{StaticResource CommonStyle}" />
+        <ListBox x:Name="CustomColorBox" Margin="50,150,0,0" Width="350" Height="100" 
+                 SelectionChanged="CustomColorBox_SelectionChanged"
+                 ItemTemplate="{StaticResource ColorIndexTempalte}" ItemsSource="{Binding Model.ColorList}"/>
+        <Rectangle Margin="300,200,0,0" Width="40" Height="40" Fill="#FF202020"/>
     </Grid>
 </Window>
