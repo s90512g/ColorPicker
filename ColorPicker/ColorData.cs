@@ -18,8 +18,6 @@ namespace ColorPicker
         {
             _location = new Point(-1, -1);
             _colorValue = color;
-            //NotifyPropertyChanged("ColorValue");
-
         }
         public Brush ColorValue
         {
@@ -41,6 +39,6 @@ namespace ColorPicker
         void NotifyPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        } 
+        }
     }
 }

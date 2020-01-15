@@ -59,6 +59,8 @@
     <Compile Include="ColorData.cs" />
     <Compile Include="ColorModel.cs" />
     <Compile Include="DrawBlockEvent.cs" />
+    <Compile Include="HookType.cs" />
+    <Compile Include="MouseMessages.cs" />
     <Compile Include="ReadColorValue.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

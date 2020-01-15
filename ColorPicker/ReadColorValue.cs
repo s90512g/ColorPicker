@@ -9,6 +9,8 @@ using Brushes = System.Windows.Media.Brushes;
 using Point = System.Windows.Point;
 using Color = System.Drawing.Color;
 using System.Windows.Media;
+using System.Threading;
+using System.Windows;
 
 namespace ColorPicker
 {
@@ -18,35 +20,64 @@ namespace ColorPicker
         public String Name { get; } = "123";
         public ColorModel Model { get; } = new ColorModel();
         private Bitmap _Img = new Bitmap(@"../../Image/pop_ic_color.png");
+        public Point Location = new Point(0, 0);
+        private Point _location = new Point(0, 0);
+        public int index;
+        private Thread ReadValueThread;
+        public bool ThreadKey = true;
         public ReadColorValue()
         {
-            Brush defaultColor = Brushes.White;
             for (int i = 0; i < 16; i++)
             {
+                Brush defaultColor = Brushes.White;
                 Model.ColorList.Add(new ColorData(defaultColor));
             }
+            ReadValueThread = new Thread(ReadValue) { IsBackground = true };
         }
-        public void ReadPixel(Point locatoin, int index)
+        public void StartReadPixelValue()
         {
-            Color pixelValue = new Color();
-            try
+            if ((ReadValueThread.ThreadState & ThreadState.Suspended) == ThreadState.Suspended)
             {
-                pixelValue = _Img.GetPixel((int)Math.Ceiling(locatoin.X), (int)Math.Ceiling(locatoin.Y));
+                ReadValueThread.Resume();
             }
-            catch
+            else if ((ReadValueThread.ThreadState & ThreadState.Unstarted) == ThreadState.Unstarted)
             {
-                DrawBlockEvent?.Invoke(new DrawBlockEventArgs(locatoin, true));
-                return;
+                ReadValueThread.Start();
             }
-            if (pixelValue.A == 0)
+        }
+        public void StopReadPixelValue()
+        {
+            ReadValueThread.Suspend();
+        }
+        private void ReadValue()
+        {
+            while (ThreadKey)
             {
-                return;
+                if (_location != Location)
+                {
+                    _location = Location;
+                    Color pixelValue = new Color();
+                    int x = (int)Math.Ceiling(_location.X);
+                    int y = (int)Math.Ceiling(_location.Y);
+                    try
+                    {
+                        pixelValue = _Img.GetPixel(x, y);
+                    }
+                    catch { }
+                    if (pixelValue.A == 255)
+                    {
+                        DrawBlockEvent?.Invoke(new DrawBlockEventArgs(new Point((int)Math.Ceiling(_location.X), (int)Math.Ceiling(_location.Y))));
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            ColorData item = Model.ColorList[index];
+                            Brush brush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(pixelValue.A, pixelValue.R, pixelValue.G, pixelValue.B));
+                            item.ColorValue = brush;
+                            item.Localtion = new Point((int)Math.Ceiling(_location.X), (int)Math.Ceiling(_location.Y));
+                        });
+                    }
+                }
+                Thread.Sleep(1);
             }
-            ColorData item = Model.ColorList[index];
-            Brush brush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(pixelValue.A, pixelValue.R, pixelValue.G, pixelValue.B));
-            item.ColorValue = brush;
-            item.Localtion = new Point((int)Math.Ceiling(locatoin.X), (int)Math.Ceiling(locatoin.Y));
-            DrawBlockEvent?.Invoke(new DrawBlockEventArgs(item.Localtion));
         }
     }
 }
