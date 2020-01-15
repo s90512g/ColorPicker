@@ -42,7 +42,7 @@
         <Image Margin="500,100,0,0" Width="160" Height="160" Source="Image/pop_ic_color.png"  MouseLeftButtonDown="ColorImg_MouseLeftButtonDown" MouseMove="ColorImg_MouseMove" x:Name="ColorImg" Style="{StaticResource CommonStyle}"/>
         <Border Margin="490,90,0,0" Width="180" Height="180" BorderBrush="Black" BorderThickness="1"  Style="{StaticResource CommonStyle}"/>
         <Path Margin="500,100,0,0" Width="160" Height="160" x:Name="DrawBox" Fill="{x:Null}" Stroke="Black" StrokeThickness="1"  Style="{StaticResource CommonStyle}"/>
-        <TextBlock Text="自訂色彩(C):" Margin="50,100,0,0" FontSize="24" Width="200" Style="{StaticResource CommonStyle}" />
+        <TextBlock Text="自訂色彩:" Margin="50,100,0,0" FontSize="24" Width="200" Style="{StaticResource CommonStyle}" />
         <ListBox x:Name="CustomColorBox" Margin="50,150,0,0" Width="350" Height="100" 
                  SelectionChanged="CustomColorBox_SelectionChanged"
                  ItemTemplate="{StaticResource ColorIndexTempalte}" ItemsSource="{Binding Model.ColorList}"/>

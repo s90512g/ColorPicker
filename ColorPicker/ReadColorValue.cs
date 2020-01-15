@@ -17,14 +17,16 @@ namespace ColorPicker
     class ReadColorValue
     {
         public DrawBlockHandler DrawBlockEvent;
-        public String Name { get; } = "123";
         public ColorModel Model { get; } = new ColorModel();
         private Bitmap _Img = new Bitmap(@"../../Image/pop_ic_color.png");
-        public Point Location = new Point(0, 0);
-        private Point _location = new Point(0, 0);
-        public int index;
+        private Point Location = new Point(0, 0);
+        private Point tmpLocation;
+        private int _index = -1;
         private Thread ReadValueThread;
-        public bool ThreadKey = true;
+        private ManualResetEvent _pauseEvent;
+        private readonly Object ThisLock = new Object();
+        private bool ThreadKey = true;
+        private readonly byte AlphaMax = 255;
         public ReadColorValue()
         {
             for (int i = 0; i < 16; i++)
@@ -34,45 +36,57 @@ namespace ColorPicker
             }
             ReadValueThread = new Thread(ReadValue) { IsBackground = true };
         }
-        public void StartReadPixelValue()
+        public void StartReadPixelValue(int index)
         {
-            if ((ReadValueThread.ThreadState & ThreadState.Suspended) == ThreadState.Suspended)
+            if ((ReadValueThread.ThreadState & ThreadState.WaitSleepJoin) == ThreadState.WaitSleepJoin)
             {
-                ReadValueThread.Resume();
+                _index = index;
+                _pauseEvent.Set();
             }
             else if ((ReadValueThread.ThreadState & ThreadState.Unstarted) == ThreadState.Unstarted)
             {
+                _index = index;
                 ReadValueThread.Start();
+                tmpLocation = new Point(0, 0);
+                _pauseEvent = new ManualResetEvent(true);
             }
         }
         public void StopReadPixelValue()
         {
-            ReadValueThread.Suspend();
+            _pauseEvent.Reset();
+        }
+        public void UpdateLocation(Point newLocation)
+        {
+            lock (ThisLock)
+            {
+                Location = newLocation;
+            }
         }
         private void ReadValue()
         {
             while (ThreadKey)
             {
-                if (_location != Location)
+                _pauseEvent.WaitOne(Timeout.Infinite);
+                if (tmpLocation != Location && _index != -1)
                 {
-                    _location = Location;
+                    tmpLocation = Location;
                     Color pixelValue = new Color();
-                    int x = (int)Math.Ceiling(_location.X);
-                    int y = (int)Math.Ceiling(_location.Y);
+                    int x = (int)Math.Ceiling(tmpLocation.X);
+                    int y = (int)Math.Ceiling(tmpLocation.Y);
                     try
                     {
                         pixelValue = _Img.GetPixel(x, y);
                     }
                     catch { }
-                    if (pixelValue.A == 255)
+                    if (pixelValue.A == AlphaMax)
                     {
-                        DrawBlockEvent?.Invoke(new DrawBlockEventArgs(new Point((int)Math.Ceiling(_location.X), (int)Math.Ceiling(_location.Y))));
+                        DrawBlockEvent?.Invoke(new DrawBlockEventArgs(new Point((int)Math.Ceiling(tmpLocation.X), (int)Math.Ceiling(tmpLocation.Y))));
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            ColorData item = Model.ColorList[index];
+                            ColorData item = Model.ColorList[_index];
                             Brush brush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(pixelValue.A, pixelValue.R, pixelValue.G, pixelValue.B));
                             item.ColorValue = brush;
-                            item.Localtion = new Point((int)Math.Ceiling(_location.X), (int)Math.Ceiling(_location.Y));
+                            item.Localtion = new Point((int)Math.Ceiling(tmpLocation.X), (int)Math.Ceiling(tmpLocation.Y));
                         });
                     }
                 }

@@ -80,8 +80,8 @@ namespace ColorPicker
             if (CustomColorBox.SelectedIndex == -1)
                 return;
             IsMouseUp = false;
-            ReadColor.Location = e.GetPosition(ColorImg);
-            ReadColor.StartReadPixelValue();
+            ReadColor.UpdateLocation(e.GetPosition(ColorImg));
+            ReadColor.StartReadPixelValue(CustomColorBox.SelectedIndex);
             InstallMouseEvnetHook();
         }
         private void InstallMouseEvnetHook()
@@ -98,7 +98,7 @@ namespace ColorPicker
         {
             if (!IsMouseUp)
             {
-                ReadColor.Location = e.GetPosition(ColorImg);
+                ReadColor.UpdateLocation(e.GetPosition(ColorImg));
             }
         }
     }
