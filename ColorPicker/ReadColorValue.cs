@@ -11,6 +11,7 @@ using Color = System.Drawing.Color;
 using System.Windows.Media;
 using System.Threading;
 using System.Windows;
+using System.Windows.Media.Imaging;
 
 namespace ColorPicker
 {
@@ -18,16 +19,14 @@ namespace ColorPicker
     {
         public DrawBlockHandler DrawBlockEvent;
         public ColorModel Model { get; } = new ColorModel();
-        private Bitmap _Img = new Bitmap(@"../../Image/pop_ic_color.png");
-        private Point Location = new Point(0, 0);
-        private Point tmpLocation;
-        private int _index = -1;
+        private Bitmap _Img;
+        private Point Location = new Point();
+        private int Index = -1;
         private Thread ReadValueThread;
         private ManualResetEvent _pauseEvent;
         private readonly Object ThisLock = new Object();
         private bool ThreadKey = true;
-        private readonly byte AlphaMax = 255;
-        public ReadColorValue()
+        public ReadColorValue(string imagePath = "Image/pop_ic_color.png")
         {
             for (int i = 0; i < 16; i++)
             {
@@ -35,40 +34,58 @@ namespace ColorPicker
                 Model.ColorList.Add(new ColorData(defaultColor));
             }
             ReadValueThread = new Thread(ReadValue) { IsBackground = true };
+            try
+            {
+                _Img = new Bitmap(imagePath);
+            }
+            catch (System.IO.FileNotFoundException) { }
         }
-        public void StartReadPixelValue(int index)
+
+        public void StartReadPixel()
         {
             if ((ReadValueThread.ThreadState & ThreadState.WaitSleepJoin) == ThreadState.WaitSleepJoin)
             {
-                _index = index;
                 _pauseEvent.Set();
             }
             else if ((ReadValueThread.ThreadState & ThreadState.Unstarted) == ThreadState.Unstarted)
             {
-                _index = index;
                 ReadValueThread.Start();
-                tmpLocation = new Point(0, 0);
                 _pauseEvent = new ManualResetEvent(true);
             }
         }
-        public void StopReadPixelValue()
+
+        public void SuspendReadPixel()
         {
             _pauseEvent.Reset();
         }
-        public void UpdateLocation(Point newLocation)
+
+        public void StopReadPixel()
+        {
+            ThreadKey = false;
+            ReadValueThread.Abort();
+        }
+
+        public void UpdateInfo(Point newLocation, int index = -1)
         {
             lock (ThisLock)
             {
                 Location = newLocation;
+                if (index != -1)
+                    Index = index;
             }
         }
+
         private void ReadValue()
         {
+            Point tmpLocation = new Point();
+            int tmpIndex;
+            byte alphaMax = 255;
             while (ThreadKey)
             {
                 _pauseEvent.WaitOne(Timeout.Infinite);
-                if (tmpLocation != Location && _index != -1)
+                if (tmpLocation != Location)
                 {
+                    tmpIndex = Index;
                     tmpLocation = Location;
                     Color pixelValue = new Color();
                     int x = (int)Math.Ceiling(tmpLocation.X);
@@ -78,16 +95,19 @@ namespace ColorPicker
                         pixelValue = _Img.GetPixel(x, y);
                     }
                     catch { }
-                    if (pixelValue.A == AlphaMax)
+                    if (pixelValue.A == alphaMax)
                     {
-                        DrawBlockEvent?.Invoke(new DrawBlockEventArgs(new Point((int)Math.Ceiling(tmpLocation.X), (int)Math.Ceiling(tmpLocation.Y))));
-                        Application.Current.Dispatcher.Invoke(() =>
+                        DrawBlockEvent?.Invoke(new DrawBlockEventArgs(new Point(x, y)));
+                        if (tmpIndex > -1)
                         {
-                            ColorData item = Model.ColorList[_index];
-                            Brush brush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(pixelValue.A, pixelValue.R, pixelValue.G, pixelValue.B));
-                            item.ColorValue = brush;
-                            item.Localtion = new Point((int)Math.Ceiling(tmpLocation.X), (int)Math.Ceiling(tmpLocation.Y));
-                        });
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                ColorData item = Model.ColorList[tmpIndex];
+                                Brush brush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(pixelValue.A, pixelValue.R, pixelValue.G, pixelValue.B));
+                                item.ColorValue = brush;
+                                item.Localtion = new Point(x, y);
+                            });
+                        }
                     }
                 }
                 Thread.Sleep(1);

@@ -21,9 +21,13 @@ namespace ColorPicker
             InitializeComponent();
         }
         private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
+        {            
             DataContext = ReadColor;
             ReadColor.DrawBlockEvent += new DrawBlockHandler(DrawBlock);
+        }
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            ReadColor.StopReadPixel();
         }
         private void DrawBlock(DrawBlockEventArgs e)
         {
@@ -32,7 +36,6 @@ namespace ColorPicker
                 Ellipse.Center = e.BlockLocation;
                 DrawBox.Data = Ellipse;
             });
-
         }
 
         private void CustomColorBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -50,7 +53,6 @@ namespace ColorPicker
                     DrawBox.Data = Ellipse;
                 }
             }
-
         }
 
         [DllImport("user32.dll", SetLastError = true)]
@@ -69,7 +71,7 @@ namespace ColorPicker
             if (MouseMessages.WM_LBUTTONUP == (MouseMessages)wParam)
             {
                 IsMouseUp = true;
-                ReadColor.StopReadPixelValue();
+                ReadColor.SuspendReadPixel();
                 UnhookWindowsHookEx(hHook);
                 hHook = IntPtr.Zero;
             }
@@ -80,8 +82,8 @@ namespace ColorPicker
             if (CustomColorBox.SelectedIndex == -1)
                 return;
             IsMouseUp = false;
-            ReadColor.UpdateLocation(e.GetPosition(ColorImg));
-            ReadColor.StartReadPixelValue(CustomColorBox.SelectedIndex);
+            ReadColor.UpdateInfo(e.GetPosition(ColorImg), CustomColorBox.SelectedIndex);
+            ReadColor.StartReadPixel();
             InstallMouseEvnetHook();
         }
         private void InstallMouseEvnetHook()
@@ -98,7 +100,7 @@ namespace ColorPicker
         {
             if (!IsMouseUp)
             {
-                ReadColor.UpdateLocation(e.GetPosition(ColorImg));
+                ReadColor.UpdateInfo(e.GetPosition(ColorImg));
             }
         }
     }
